@@ -1,0 +1,155 @@
+//版本控制
+//v1 	基础功能，自动截取字幕头尾，复制粘贴文本
+
+//经验教训
+//1.查看变量不一定能看到值，这应该是个bug。可以用messageBox或者TracePrint查看一下值
+//2.脚本重新运行之后，似乎剪映的像素点有变化，不一定能找到。要降低阈值
+//3.图片查找不可靠，因为剪映字幕缩放每次不一样，所以会导致像素匹配不上。//picPath = "D:\Program Files (x86)\按键精灵\按键精灵2014\pictures\字幕A.bmp"
+//4.剪映颜色也是可能变的，比如tail的颜色可能是29292A
+//5.找色的时候往后加1，因为颜色容差大，可能有颜色既匹配head又匹配tail。匹配区域进1防止这种情况。
+
+//define variables
+Global widthStep, x1, y1, x2, y2, picPath, tailColor, targetY, curHeadX, curTailX, textX, textY, colorMatchingRatio, scrollX, scrollY
+widthStep = 70
+x1 = 132
+y1 = 1026
+x2 = 2500
+y2 = 1026
+curTailX = x1//记录下的下次找出起始位置
+targetY = 1050//目标粘贴的字幕y坐标
+textX = 2100//剪映右上角文字的坐标
+textY = 200//剪映右上角文字的坐标
+scrollX = 150//下方滑动条的坐标
+scrollY = 1385//下方滑动条的坐标
+headColor = "37499C"
+tailColor = "292929"
+scrollColor = "404040"
+colorMatchingRatio = 0.1//颜色的模糊匹配比例，剪映颜色变化太大了
+
+Function ScrollForTheRemainingPart()
+	FindColorEx x1,scrollY,x2,scrollY,scrollColor, 0, 0.9,intX,intY
+	If intX > 0 And intY > 0 Then 
+		Dim distance
+		distance = 500
+		TracePrint "Scroll to the right"
+		TracePrint "curHeadX:" & curHeadX & ", curTailX:" & curTailX
+		MoveTo intX, intY
+		LeftDown 1
+		Delay 100
+		//往右拉了多少，之前的head，tail坐标就减多少，对齐
+		MoveR distance, 0
+		TracePrint "MoveR: " & distance		
+		curHeadX = x1//curHeadX - distance
+		curTailX = x1//curTailX - distance
+		TracePrint "curHeadX:" & curHeadX & ", curTailX:" & curTailX
+		Delay 100
+		LeftUp 1
+		//拉动之后给windows界面渲染一点时间，要不然界面还在动，findColor找到的位置不对
+		//Delay 1000
+		TracePrint "scroll ExitScript"
+    	ExitScript 		
+	End If
+End Function
+
+Function FindSubtitleHead()
+    FindColorEx curTailX+1, y1, x2, y2, headColor, 0, colorMatchingRatio, intX, intY
+    TracePrint "FindColor, head, intX:" & intX
+    //如果找不到下一个头，就结束脚本
+    If intX = - 1  And intY = - 1  Then 
+    	TracePrint "ExitScript"
+    	ExitScript 
+    End If
+    		
+    If intX > 0 And intY > 0 Then 
+    	//因为颜色匹配的容差大，所以有可能匹配到错误的位置卡住。所以curHeadX没动的时候，就手动推前一个像素继续检测
+    	If curHeadX = intX Then 
+    		curHeadX = curHeadX + 1
+    	Else 
+    		curHeadX = intX
+    	End If
+    	
+    	//先查询一下当前的字幕的尾巴，看字幕是否完整的在范围内，如果不在就往后拉一下。
+    	FindColorEx curHeadX+1, y1 + 1, x2, y2 - 1, tailColor, 0, colorMatchingRatio, intTailX, intTailY
+    	If intTailX = - 1  And intTailY = - 1  Then 
+    		Call ScrollForTheRemainingPart()
+    		Exit Function
+    	Else
+    		TracePrint "curHeadX:" & curHeadX & ", curTailX:" & curTailX
+    		MoveTo curHeadX, targetY
+    		TracePrint "MoveTo, x:" & curHeadX & ", y:" & targetY
+    		//Delay 2000
+    		LeftClick 1
+    		TracePrint "LeftClick"
+    		Delay 300//必须要让剪映反应一下，要不然要出奇怪的问题。verified！
+    		KeyPress "Q", 1
+    		TracePrint "Press Q"
+    	End If
+    End If
+End Function
+
+Function FindSubtitleTail()
+	FindColorEx curHeadX+1, y1, x2, y2, tailColor, 0, colorMatchingRatio, intX, intY
+	TracePrint "FindColor, tail, intX:" & intX
+	If intX > 0 And intY > 0 Then 
+		curTailX = intX//记录找到的尾部x坐标，下次从这个点开始往后找。
+		MoveTo intX, targetY
+		TracePrint "MoveTo:" & intX
+		LeftClick 1
+		Delay 200
+		//按Ctrl+B
+		KeyDown 17, 1
+		KeyPress 66, 1
+		KeyUp 17, 1
+		TracePrint "Press Ctrl+B"
+	End If	
+End Function
+
+Function CopyContentAndPaste()
+	MoveTo curHeadX + 1, y1
+	TracePrint "MoveTo: x:" & curHeadX + 1 & ", y:" & y1
+	LeftClick 1
+	TracePrint "LeftClick"
+	Delay 100
+	MoveTo textX, textY
+	TracePrint "MoveTo: x:" & textX & ", y:" & textY
+	LeftClick 1
+	Delay 100
+	//Ctrl+A
+	KeyDown 17, 1
+	KeyPress 65, 1
+	KeyUp 17, 1
+	//Ctrl+C
+	KeyDown 17, 1
+	KeyPress 67, 1
+	KeyUp 17, 1
+	//移到待粘贴字幕
+	MoveTo curHeadX + 1, targetY
+	LeftClick 1
+	MoveTo textX - 100, textY - 40//剪映翻译字幕和普通文本字幕的位置是有所不同的
+	LeftClick 1
+	Delay 100
+	//Ctrl+A
+	KeyDown 17, 1
+	KeyPress 65, 1
+	KeyUp 17, 1
+	//Ctrl+V
+	KeyDown 17, 1
+	KeyPress 86, 1
+	KeyUp 17, 1
+End Function
+
+Dim count
+count = 0
+While count < 100
+	count = count + 1
+	Call FindSubtitleHead()
+	Call FindSubtitleTail()
+	Call CopyContentAndPaste()
+	TracePrint "Execution count:" & count
+	//Delay 1000
+Wend
+
+//MessageBox("test")
+//TracePrint "FindColor, intX:" & intX
+//TracePrint "FindColor, intY:" & intY
+//ExitScript
