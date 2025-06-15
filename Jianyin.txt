@@ -1,5 +1,6 @@
 //版本控制
 //v1 	基础功能，自动截取字幕头尾，复制粘贴文本
+//v1.1	增加去掉尾部字幕残余的功能
 
 //经验教训
 //1.查看变量不一定能看到值，这应该是个bug。可以用messageBox或者TracePrint查看一下值
@@ -13,7 +14,7 @@ Global widthStep, x1, y1, x2, y2, picPath, tailColor, targetY, curHeadX, curTail
 widthStep = 70
 x1 = 132
 y1 = 1026
-x2 = 2500
+x2 = 2544
 y2 = 1026
 curTailX = x1//记录下的下次找出起始位置
 targetY = 1050//目标粘贴的字幕y坐标
@@ -73,7 +74,7 @@ Function FindSubtitleHead()
     	If intTailX = - 1  And intTailY = - 1  Then 
     		Call ScrollForTheRemainingPart()
     		Exit Function
-    	Else
+    	Else     		    		
     		TracePrint "curHeadX:" & curHeadX & ", curTailX:" & curTailX
     		MoveTo curHeadX, targetY
     		TracePrint "MoveTo, x:" & curHeadX & ", y:" & targetY
@@ -101,7 +102,16 @@ Function FindSubtitleTail()
 		KeyPress 66, 1
 		KeyUp 17, 1
 		TracePrint "Press Ctrl+B"
-	End If	
+	End If
+	//如果滑动条的末尾是灰的，那就意味着这已经到尾了，就可以直接删点最后一点拷贝字幕轨道的尾巴。
+    IfColor x2, scrollY, tailColor, 0 Then    
+    	MoveTo intX, targetY + 5
+		LeftClick 1
+		Delay 200
+		KeyPress "Delete", 1
+		TracePrint "Delete the useless tail"
+	Else
+	End If
 End Function
 
 Function CopyContentAndPaste()
