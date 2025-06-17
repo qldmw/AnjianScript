@@ -83,13 +83,13 @@ Function FindSubtitleHead()
     		Exit Function
     	Else     		    		
     		TracePrint "curHeadX:" & curHeadX & ", curTailX:" & curTailX
-    		MoveTo curHeadX, targetY
+    		MoveTo curHeadX + 10, targetY
     		TracePrint "MoveTo, x:" & curHeadX & ", y:" & targetY
     		//Delay 2000
     		LeftClick 1
     		TracePrint "LeftClick"
     		//移到上方，否则可能出现点击了，但是定位线依然不在点击的这个位置上
-    		MoveR 0, -100
+    		MoveR -10, -100
     		Delay 300//必须要让剪映反应一下，要不然要出奇怪的问题。verified！
     		KeyPress "Q", 1
     		TracePrint "Press Q"
@@ -153,9 +153,13 @@ End Function
 Function CheckIfItIsDivided()
 	//先检查headColor的位置，避免在打断空格中逐个像素检查
 	FindColorEx curTailX + 1, y1, x2, y2, headColor, 0, colorMatchingRatio, intXHead, intYHead
-	//只有当记录和检测的x位置差异过大(>10)时，才手动给他跳一下
-	If intXHead > 0 And intYHead > 0 And intXHead - curTailX > 10 Then 
-		curTailX = intXHead - 2
+	//找下一个头
+	If intXHead > 0 And intYHead > 0 Then 
+		//只有当记录和检测的x位置差异过大(>10)时，才手动给他跳一下
+		If intXHead - curTailX > 10 Then
+			TracePrint "The curTailX jump from " & curTailX & " to " & intXHead
+			curTailX = intXHead - 2
+		End If	
 	Else 
 		//找不到下一个头，且待粘贴字幕轨道的末尾是灰的，那就意味着这已经到尾了，就可以直接删点最后一点拷贝字幕轨道的尾巴
     	IfColor x2, targetY, focusedTailColor, 0 Then    
@@ -174,18 +178,21 @@ Function CheckIfItIsDivided()
 	If intX > 0 And intY > 0 Then 
 		//查找待粘贴轨道的灰色
 		FindColorEx curTailX + 1, targetY, x2, targetY, tailColor, 0, colorMatchingRatio, intX2, intY2
-		//如果上下两个轨道找到的灰色的x位置都是一样的，那就说明已经分离了
-		If intX2 > 0 And intY2 > 0 And intX = intX2 Then 
+		//如果上下两个轨道找到的灰色的x位置都是一样的(会有一两个像素的容差)，那就说明已经分离了
+		TracePrint "Compare the breakpoint for 2 tracks intX: " & intX & ", intX2:" & intX2
+		If intX2 > 0 And intY2 > 0 And Abs(intX - intX2) < 5 Then 
 			CheckIfItIsDivided = True
+			TracePrint "CheckIfItIsDivided: True" & ", x:" & intX
 			curTailX = intX
 		Else 
 			CheckIfItIsDivided = False
+			TracePrint "CheckIfItIsDivided: False" & ", x:" & intX
 		End If
 	Else 
 		//当找不到的时候，说明已经到末尾了
-		CheckIfItIsDivided = False		
-	End If
-	TracePrint "CheckIfItIsDivided:" & CheckIfItIsDivided & ", x:" & intX
+		CheckIfItIsDivided = False
+		TracePrint "CheckIfItIsDivided: False" & ", x:" & intX
+	End If	
 End Function
 
 Dim count
