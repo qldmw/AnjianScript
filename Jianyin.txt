@@ -14,15 +14,15 @@
 Global widthStep, x1, y1, x2, y2, picPath, tailColor, targetY, curHeadX, curTailX, textX, textY, colorMatchingRatio, scrollX, scrollY, jumpToLoopEnd
 widthStep = 70
 x1 = 132
-y1 = 1026
+y1 = 1145
 x2 = 2544
-y2 = 1026
+y2 = 1145
 curTailX = x1//记录下的下次找出起始位置
-targetY = 1050//目标粘贴的字幕y坐标
-textX = 2100//剪映右上角文字的坐标
-textY = 200//剪映右上角文字的坐标
+targetY = 1174//目标粘贴的字幕y坐标
+textX = 2000//剪映右上角文字的坐标
+textY = 180//剪映右上角文字的坐标
 scrollX = 150//下方滑动条的坐标
-scrollY = 1385//下方滑动条的坐标
+scrollY = 1545//下方滑动条的坐标
 headColor = "37499C"
 tailColor = "292929"
 focusedTailColor = "2F2F2F"
