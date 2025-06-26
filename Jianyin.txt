@@ -137,7 +137,9 @@ Function CopyContentAndPaste()
 	//移到待粘贴字幕
 	MoveTo curHeadX + 1, targetY
 	LeftClick 1
-	MoveTo textX - 100, textY - 40//剪映翻译字幕和普通文本字幕的位置是有所不同的
+	TracePrint "LeftClickk" 
+	MoveTo textX, textY - 30//剪映翻译字幕和普通文本字幕的位置是有所不同的
+	TracePrint "MoveTo: textX:" & textX & ", textY - 30:" & textY - 30
 	LeftClick 1
 	Delay 100
 	//Ctrl+A
